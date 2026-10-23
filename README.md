@@ -60,6 +60,11 @@ jadi pil tampil sebagai jendela melayang biasa — fungsinya tetap jalan
 Untuk pengalaman paling mirip aslinya, pakai sesi X11
 (di layar login Zorin: klik ikon roda gigi → pilih sesi Xorg/X11).
 
+**Alternatif Wayland tanpa ganti sesi:** gunakan versi ekstensi GNOME
+Shell di folder `gnome-extension/` — pilnya hidup di dalam UI shell,
+jadi posisinya terkunci di tengah-atas juga di Wayland.
+Lihat `gnome-extension/README.md` untuk cara pasangnya.
+
 ## Cara kerja singkat
 
 - **Animasi**: dua pegas (lebar & tinggi; kekakuan 210, redaman 21 —

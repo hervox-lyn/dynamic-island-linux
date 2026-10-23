@@ -1,0 +1,124 @@
+/* Dynamic Island — stylesheet ekstensi GNOME Shell */
+
+.island {
+    background-color: rgba(8, 8, 11, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 999px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+    padding: 10px 14px;
+}
+
+.island-panel-radius {
+    border-radius: 28px;
+}
+
+.clock-time {
+    font-size: 17px;
+    font-weight: bold;
+    color: #f5f5f5;
+}
+
+.clock-date {
+    font-size: 11px;
+    color: #b9bec9;
+}
+
+.timer-chip {
+    font-size: 12px;
+    font-weight: bold;
+    color: #e8b84b;
+}
+
+.media-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #f5f5f5;
+}
+
+.media-artist {
+    font-size: 11px;
+    color: #b9bec9;
+}
+
+.notify-app {
+    font-size: 11px;
+    font-weight: bold;
+    color: #e8b84b;
+}
+
+.notify-summary {
+    font-size: 13px;
+    font-weight: bold;
+    color: #f5f5f5;
+}
+
+.notify-body {
+    font-size: 11px;
+    color: #b9bec9;
+}
+
+.rec-text {
+    font-size: 13px;
+    font-weight: bold;
+    color: #f5f5f5;
+}
+
+.rec-dot {
+    font-size: 13px;
+    color: #ff453a;
+}
+
+.panel-heading {
+    font-size: 11px;
+    font-weight: bold;
+    color: #e8b84b;
+    padding-top: 6px;
+}
+
+.panel-text {
+    font-size: 12px;
+    color: #f5f5f5;
+}
+
+.panel-dim {
+    font-size: 11px;
+    color: #b9bec9;
+}
+
+.ctl-btn {
+    background-color: rgba(255, 255, 255, 0.10);
+    border-radius: 999px;
+    color: #ffffff;
+    font-size: 13px;
+    min-width: 30px;
+    min-height: 30px;
+    padding: 0 6px;
+}
+
+.ctl-btn:hover {
+    background-color: rgba(255, 255, 255, 0.22);
+}
+
+.preset-btn {
+    background-color: rgba(255, 255, 255, 0.10);
+    border-radius: 10px;
+    color: #ffffff;
+    font-size: 12px;
+    padding: 5px 10px;
+}
+
+.preset-btn:hover {
+    background-color: rgba(232, 184, 75, 0.35);
+}
+
+.progress-track {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    height: 4px;
+}
+
+.progress-fill {
+    background-color: #e8b84b;
+    border-radius: 3px;
+    height: 4px;
+}
