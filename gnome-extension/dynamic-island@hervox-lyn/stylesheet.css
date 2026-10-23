@@ -14,7 +14,7 @@
 
 /* --- jam --- */
 .clock-time {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 800;
     color: #f7f7f8;
 }
@@ -30,7 +30,60 @@
     color: #f0be4f;
 }
 
-/* --- media --- */
+/* --- media compact (pil memanjang) --- */
+.media-art-sm {
+    border-radius: 7px;
+    color: #a7acb8;
+}
+
+.media-compact-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #f7f7f8;
+}
+
+/* --- detail media player --- */
+.media-art-lg {
+    border-radius: 12px;
+    color: #a7acb8;
+}
+
+.detail-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #f7f7f8;
+}
+
+.detail-artist {
+    font-size: 12px;
+    color: #a7acb8;
+    padding-top: 2px;
+}
+
+.detail-time {
+    font-size: 10px;
+    color: #878d99;
+    font-weight: 600;
+}
+
+.ctl-btn-lg {
+    background-color: rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    color: #ffffff;
+    min-width: 48px;
+    min-height: 48px;
+    padding: 0;
+}
+
+.ctl-btn-lg:hover {
+    background-color: rgba(255, 255, 255, 0.24);
+}
+
+.ctl-btn-lg:active {
+    background-color: rgba(240, 190, 79, 0.40);
+}
+
+/* --- media (umum) --- */
 .media-art {
     border-radius: 10px;
     color: #a7acb8;
