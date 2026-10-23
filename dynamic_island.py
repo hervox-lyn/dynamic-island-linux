@@ -117,6 +117,18 @@ def parse_timer_arg(argv):
     return None
 
 
+def is_x11_display():
+    """True bila backend GDK adalah X11 (di Wayland aplikasi tidak boleh
+    mengatur posisi jendelanya sendiri — compositor yang menentukan)."""
+    display = Gdk.Display.get_default()
+    return display is not None and "X11" in type(display).__name__
+
+
+def session_label():
+    return os.environ.get("XDG_SESSION_TYPE") or (
+        "x11" if is_x11_display() else "wayland")
+
+
 # ---------------------------------------------------------------------------
 # Fisika pegas: satu sumbu (dipakai untuk lebar, tinggi)
 # ---------------------------------------------------------------------------
@@ -223,6 +235,12 @@ class Island(Gtk.Window):
         self.set_skip_taskbar_hint(True)
         self.set_skip_pager_hint(True)
         self.set_type_hint(Gdk.WindowTypeHint.DOCK)
+        try:
+            # Jangkar tepi-atas-tengah: saat jendela berubah ukuran
+            # (termasuk panel dibuka), sisi atas tetap & melebar simetris.
+            self.set_gravity(Gdk.Gravity.NORTH)
+        except Exception:
+            pass
         self.set_default_size(40, 40)
         try:
             self.set_app_paintable(True)
@@ -268,8 +286,18 @@ class Island(Gtk.Window):
         self.connect("button-press-event", self._on_click)
         self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
         self.connect("destroy", Gtk.main_quit)
+        self.connect("map-event", self._on_map)
         self.show_all()
         self._set_state("clock", force=True)
+        if not is_x11_display():
+            print("[island] PERINGATAN: sesi ini terdeteksi Wayland "
+                  f"({session_label()}). Wayland tidak mengizinkan aplikasi "
+                  "mengatur posisi jendelanya sendiri, jadi pil akan "
+                  "ditempatkan compositor (biasanya di tengah layar). "
+                  "Agar pil menempel di tengah-atas seperti seharusnya, "
+                  "masuk lewat sesi Xorg/X11 (layar login > ikon roda gigi "
+                  "> pilih sesi Xorg), atau gunakan versi ekstensi GNOME.",
+                  flush=True)
 
     # ------------------------------------------------------------------ UI --
     def _build_ui(self):
@@ -804,6 +832,10 @@ class Island(Gtk.Window):
             self._refresh_panel()
         else:
             self._resolve_state()  # jaring pengaman transisi yang terlewat
+        # Watchdog posisi (X11): pil harus selalu menempel di tengah-atas,
+        # termasuk setelah panel dibuka/ditutup atau digeser window manager.
+        if is_x11_display() and self._tick_cb_id is None:
+            self._center_top(self._cur_size[0])
         return True
 
     # -------------------------------------------------------------- animasi --
@@ -836,15 +868,24 @@ class Island(Gtk.Window):
             self._center_top(w)
             self.queue_draw()
         if not (moving_w or moving_h):
+            self._center_top(w)  # tegaskan posisi akhir di tengah-atas
             self._tick_cb_id = None
             self._last_frame = None
             return False
         return True
 
+    def _on_map(self, *_args):
+        GLib.idle_add(self._recenter_now)
+        return False
+
+    def _recenter_now(self):
+        self._center_top(self._cur_size[0])
+        return False
+
     def _center_top(self, w):
+        if not is_x11_display():
+            return  # Wayland: posisi diatur compositor, tidak bisa dipaksa
         display = Gdk.Display.get_default()
-        if display is None or "X11" not in type(display).__name__:
-            return  # Wayland: posisi diatur compositor
         try:
             monitor = display.get_primary_monitor() or display.get_monitor(0)
             geo = monitor.get_geometry()
