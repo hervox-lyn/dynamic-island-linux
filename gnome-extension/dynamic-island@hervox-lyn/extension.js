@@ -27,7 +27,7 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 const SIZES = {
     clock: [188, 44],
     media: [276, 48],
-    mediadetail: [376, 192],
+    mediadetail: [380, 200],
     notify: [384, 66],
     recording: [276, 48],
     panel: [416, 404],
@@ -361,7 +361,7 @@ export default class DynamicIslandExtension extends Extension {
         const detail = new St.BoxLayout({vertical: true});
         const dHead = new St.BoxLayout({vertical: false});
         this._detailArt = new St.Icon({
-            icon_size: 48,
+            icon_size: 50,
             style_class: 'media-art-lg',
         });
         this._detailArt.set_margin_right(13);
@@ -387,7 +387,7 @@ export default class DynamicIslandExtension extends Extension {
         detail.add_child(dHead);
 
         const progRow = new St.BoxLayout({vertical: false});
-        progRow.set_margin_top(16);
+        progRow.set_margin_top(20);
         this._detailElapsed = new St.Label({
             style_class: 'detail-time', text: '0:00',
         });
@@ -412,7 +412,7 @@ export default class DynamicIslandExtension extends Extension {
 
         const ctlRow = new St.BoxLayout({vertical: false});
         ctlRow.set_x_align(Clutter.ActorAlign.CENTER);
-        ctlRow.set_margin_top(16);
+        ctlRow.set_margin_top(20);
         const mkCtl = (iconName, size, method, ref, big) => {
             const btn = new St.Button({
                 style_class: big ? 'ctl-btn-lg' : 'ctl-btn',

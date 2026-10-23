@@ -1,9 +1,15 @@
-/* Dynamic Island — stylesheet ekstensi GNOME Shell */
+/* Dynamic Island — stylesheet ekstensi GNOME Shell
+   Bahasa desain mengikuti referensi AntoSalazar/dynamic-island-linux
+   (MIT): hitam pekat, radius 22 (compact) / 24 (kartu), tipografi
+   sistem dengan hierarki putih 100/70/60/40, spasi longgar ala Apple.
+   Fitur di dalamnya adalah milik versi ini (jam, notifikasi, baterai,
+   timer, rekam layar, panel). */
 
 .island {
-    background-color: rgba(9, 9, 13, 0.95);
+    font-family: "Segoe UI", "Cantarell", "Ubuntu", "Noto Sans", sans-serif;
+    background-color: rgba(0, 0, 0, 0.98);
     border: 1px solid rgba(255, 255, 255, 0.10);
-    border-radius: 999px;
+    border-radius: 22px;
     padding: 8px 14px;
     /* TANPA box-shadow: St menggambar bayangan sebagai kotak persegi
        (tidak mengikuti border-radius) -> terlihat seperti background
@@ -11,158 +17,136 @@
 }
 
 .island-panel-radius {
-    border-radius: 26px;
-    padding: 14px 18px;
+    border-radius: 24px;
+    padding: 16px 20px;
 }
 
 /* --- jam --- */
 .clock-time {
-    font-size: 17px;
-    font-weight: 800;
-    color: #f7f7f8;
+    font-size: 16px;
+    font-weight: 600;
+    color: #ffffff;
 }
 
 .clock-date {
     font-size: 11px;
-    color: #a7acb8;
+    color: rgba(255, 255, 255, 0.60);
 }
 
 .timer-chip {
     font-size: 12px;
-    font-weight: bold;
-    color: #f0be4f;
+    font-weight: 600;
+    color: #d8b4fe;
 }
 
 /* --- media compact (pil memanjang) --- */
 .media-art-sm {
-    border-radius: 7px;
-    color: #a7acb8;
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.60);
 }
 
 .media-compact-title {
     font-size: 13px;
-    font-weight: 700;
-    color: #f7f7f8;
+    font-weight: 600;
+    color: #ffffff;
 }
 
 /* --- detail media player --- */
 .media-art-lg {
-    border-radius: 12px;
-    color: #a7acb8;
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.60);
 }
 
 .detail-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: #f7f7f8;
+    font-size: 15px;
+    font-weight: 600;
+    color: #ffffff;
 }
 
 .detail-artist {
-    font-size: 12px;
-    color: #a7acb8;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.70);
     padding-top: 2px;
 }
 
 .detail-time {
-    font-size: 10px;
-    color: #878d99;
-    font-weight: 600;
-}
-
-.ctl-btn-lg {
-    background-color: rgba(255, 255, 255, 0.12);
-    border-radius: 999px;
-    color: #ffffff;
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0;
-}
-
-.ctl-btn-lg:hover {
-    background-color: rgba(255, 255, 255, 0.24);
-}
-
-.ctl-btn-lg:active {
-    background-color: rgba(240, 190, 79, 0.40);
-}
-
-/* --- media (umum) --- */
-.media-art {
-    border-radius: 10px;
-    color: #a7acb8;
-}
-
-.media-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: #f7f7f8;
-}
-
-.media-artist {
+    font-family: monospace;
     font-size: 11px;
-    color: #a7acb8;
-    padding-top: 1px;
-}
-
-.media-time {
-    font-size: 10px;
-    color: #878d99;
-    font-weight: 600;
+    color: rgba(255, 255, 255, 0.60);
 }
 
 .eq-bar {
     background-color: #ffffff;
-    opacity: 0.85;
+    opacity: 0.80;
     border-radius: 2px;
     width: 3px;
 }
 
 .progress-track {
-    background-color: rgba(255, 255, 255, 0.14);
-    border-radius: 3px;
-    height: 5px;
+    background-color: rgba(255, 255, 255, 0.20);
+    border-radius: 2px;
+    height: 4px;
 }
 
 .progress-fill {
-    background-color: #f5f5f5;
-    border-radius: 3px;
-    height: 5px;
+    background-color: #ffffff;
+    border-radius: 2px;
+    height: 4px;
 }
 
+/* Kontrol polos ala referensi: tanpa lingkaran, ikon putih bersih */
 .ctl-btn {
-    background-color: rgba(255, 255, 255, 0.09);
+    background-color: transparent;
     border-radius: 999px;
-    color: #ffffff;
-    min-width: 34px;
-    min-height: 34px;
+    color: rgba(255, 255, 255, 0.85);
+    min-width: 38px;
+    min-height: 38px;
     padding: 0;
 }
 
 .ctl-btn:hover {
-    background-color: rgba(255, 255, 255, 0.20);
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
 }
 
 .ctl-btn:active {
-    background-color: rgba(240, 190, 79, 0.35);
+    background-color: rgba(255, 255, 255, 0.16);
+}
+
+.ctl-btn-lg {
+    background-color: transparent;
+    border-radius: 999px;
+    color: #ffffff;
+    min-width: 46px;
+    min-height: 46px;
+    padding: 0;
+}
+
+.ctl-btn-lg:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.ctl-btn-lg:active {
+    background-color: rgba(255, 255, 255, 0.16);
 }
 
 /* --- notifikasi --- */
 .notify-app {
-    font-size: 10px;
-    font-weight: 700;
-    color: #f0be4f;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.50);
 }
 
 .notify-summary {
     font-size: 13px;
-    font-weight: 700;
-    color: #f7f7f8;
+    font-weight: 600;
+    color: #ffffff;
     padding-top: 1px;
 }
 
 .notify-body {
-    font-size: 11px;
-    color: #a7acb8;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.70);
     padding-top: 1px;
 }
 
@@ -174,53 +158,54 @@
 
 .rec-text {
     font-size: 13px;
-    font-weight: 700;
-    color: #f7f7f8;
+    font-weight: 600;
+    color: #ffffff;
 }
 
 /* --- panel --- */
 .panel-heading {
-    font-size: 10px;
-    font-weight: 800;
-    color: #f0be4f;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.45);
 }
 
 .panel-heading-icon {
-    color: #f0be4f;
+    color: rgba(255, 255, 255, 0.75);
 }
 
 .heading-chip {
-    background-color: rgba(240, 190, 79, 0.14);
+    background-color: rgba(255, 255, 255, 0.08);
     border-radius: 8px;
 }
 
 .panel-text {
-    font-size: 12px;
-    color: #eef0f3;
+    font-size: 13px;
+    color: #ffffff;
 }
 
 .panel-dim {
     font-size: 11px;
-    color: #878d99;
+    color: rgba(255, 255, 255, 0.50);
 }
 
 .sep {
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: rgba(255, 255, 255, 0.10);
 }
 
 .preset-btn {
-    background-color: rgba(255, 255, 255, 0.09);
-    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
     color: #ffffff;
     font-size: 12px;
     font-weight: 600;
-    padding: 6px 11px;
+    padding: 6px 12px;
 }
 
 .preset-btn:hover {
-    background-color: rgba(240, 190, 79, 0.35);
+    background-color: rgba(255, 255, 255, 0.12);
 }
 
 .preset-btn:active {
-    background-color: rgba(240, 190, 79, 0.55);
+    background-color: rgba(255, 255, 255, 0.20);
 }
