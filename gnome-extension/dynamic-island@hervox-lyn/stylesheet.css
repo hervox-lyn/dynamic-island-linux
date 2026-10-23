@@ -4,12 +4,15 @@
     background-color: rgba(9, 9, 13, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: 999px;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.50);
-    padding: 10px 16px;
+    padding: 8px 14px;
+    /* TANPA box-shadow: St menggambar bayangan sebagai kotak persegi
+       (tidak mengikuti border-radius) -> terlihat seperti background
+       kotak di belakang pil. */
 }
 
 .island-panel-radius {
-    border-radius: 28px;
+    border-radius: 26px;
+    padding: 14px 18px;
 }
 
 /* --- jam --- */
@@ -49,7 +52,7 @@
 }
 
 .detail-title {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     color: #f7f7f8;
 }
@@ -70,8 +73,8 @@
     background-color: rgba(255, 255, 255, 0.12);
     border-radius: 999px;
     color: #ffffff;
-    min-width: 48px;
-    min-height: 48px;
+    min-width: 44px;
+    min-height: 44px;
     padding: 0;
 }
 
@@ -185,6 +188,11 @@
 
 .panel-heading-icon {
     color: #f0be4f;
+}
+
+.heading-chip {
+    background-color: rgba(240, 190, 79, 0.14);
+    border-radius: 8px;
 }
 
 .panel-text {

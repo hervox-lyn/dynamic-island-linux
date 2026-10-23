@@ -25,17 +25,17 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const SIZES = {
-    clock: [224, 52],
-    media: [308, 54],
-    mediadetail: [408, 204],
-    notify: [440, 72],
-    recording: [300, 54],
-    panel: [452, 420],
+    clock: [208, 46],
+    media: [276, 48],
+    mediadetail: [376, 192],
+    notify: [404, 68],
+    recording: [276, 48],
+    panel: [416, 404],
 };
 const NOTIFY_SHOW_S = 5;
 const LOW_BATT_PCT = 20;
 const RECORDER_PATTERN = '^(obs|wf-recorder|kooha|simplescreenrecorder|vokoscreenNG|vokoscreen|byzanz-record)$';
-const DETAIL_PROGRESS_W = 288;
+const DETAIL_PROGRESS_W = 252;
 
 const MPRIS_PLAYER_IFACE = `
 <node>
@@ -108,6 +108,23 @@ function fmtHms(seconds) {
     return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
+function deepUnwrap(v) {
+    // Beberapa pemain (terutama Chrome) membungkus nilai metadata dalam
+    // varian berlapis — buka semua lapisannya sampai nilai JS murni,
+    // supaya tidak muncul teks "[object variant of type ...]".
+    if (v instanceof GLib.Variant)
+        return deepUnwrap(v.unpack());
+    if (Array.isArray(v))
+        return v.map(deepUnwrap);
+    if (v && typeof v === 'object') {
+        const out = {};
+        for (const [k, val] of Object.entries(v))
+            out[k] = deepUnwrap(val);
+        return out;
+    }
+    return v;
+}
+
 function icon(name, size, cls) {
     return new St.Icon({
         icon_name: name,
@@ -167,14 +184,17 @@ class Player {
     refresh() {
         this.props.GetAllAsync('org.mpris.MediaPlayer2.Player')
             .then(([values]) => {
-                this.status = values.PlaybackStatus?.unpack() ?? 'Stopped';
-                const meta = values.Metadata?.deepUnpack() ?? {};
-                this.title = meta['xesam:title']?.unpack() ?? '';
-                const artists = meta['xesam:artist']?.unpack() ?? [];
-                this.artist = Array.isArray(artists) ? artists.join(', ') : `${artists}`;
-                this.artUrl = meta['mpris:artUrl']?.unpack() ?? '';
-                this.lengthUs = meta['mpris:length']?.unpack() ?? 0;
-                this.positionUs = values.Position?.unpack() ?? 0;
+                const props = deepUnwrap(values);
+                this.status = props.PlaybackStatus ?? 'Stopped';
+                const meta = props.Metadata ?? {};
+                this.title = meta['xesam:title'] ?? '';
+                const artists = meta['xesam:artist'] ?? [];
+                this.artist = Array.isArray(artists)
+                    ? artists.join(', ')
+                    : `${artists}`;
+                this.artUrl = meta['mpris:artUrl'] ?? '';
+                this.lengthUs = meta['mpris:length'] ?? 0;
+                this.positionUs = props.Position ?? 0;
                 this.posAt = GLib.get_monotonic_time();
                 this.onChange();
             })
@@ -312,7 +332,7 @@ export default class DynamicIslandExtension extends Extension {
         const mediaBox = new St.BoxLayout({vertical: false});
         mediaBox.set_y_align(Clutter.ActorAlign.CENTER);
         this._mediaArt = new St.Icon({
-            icon_size: 30,
+            icon_size: 26,
             style_class: 'media-art-sm',
         });
         this._mediaArt.set_margin_right(10);
@@ -333,10 +353,10 @@ export default class DynamicIslandExtension extends Extension {
         const detail = new St.BoxLayout({vertical: true});
         const dHead = new St.BoxLayout({vertical: false});
         this._detailArt = new St.Icon({
-            icon_size: 56,
+            icon_size: 48,
             style_class: 'media-art-lg',
         });
-        this._detailArt.set_margin_right(12);
+        this._detailArt.set_margin_right(13);
         const dTitles = new St.BoxLayout({vertical: true});
         dTitles.set_y_align(Clutter.ActorAlign.CENTER);
         dTitles.set_x_expand(true);
@@ -351,6 +371,7 @@ export default class DynamicIslandExtension extends Extension {
         dTitles.add_child(this._detailTitle);
         dTitles.add_child(this._detailArtist);
         this._eqDetail = makeEq(5);
+        this._eqDetail.box.set_margin_left(12);
         this._eqDetail.box.set_y_align(Clutter.ActorAlign.CENTER);
         dHead.add_child(this._detailArt);
         dHead.add_child(dTitles);
@@ -358,7 +379,7 @@ export default class DynamicIslandExtension extends Extension {
         detail.add_child(dHead);
 
         const progRow = new St.BoxLayout({vertical: false});
-        progRow.set_margin_top(14);
+        progRow.set_margin_top(16);
         this._detailElapsed = new St.Label({
             style_class: 'detail-time', text: '0:00',
         });
@@ -383,7 +404,7 @@ export default class DynamicIslandExtension extends Extension {
 
         const ctlRow = new St.BoxLayout({vertical: false});
         ctlRow.set_x_align(Clutter.ActorAlign.CENTER);
-        ctlRow.set_margin_top(14);
+        ctlRow.set_margin_top(16);
         const mkCtl = (iconName, size, method, ref, big) => {
             const btn = new St.Button({
                 style_class: big ? 'ctl-btn-lg' : 'ctl-btn',
@@ -399,11 +420,11 @@ export default class DynamicIslandExtension extends Extension {
             });
             return btn;
         };
-        const prevBtn = mkCtl('media-skip-backward-symbolic', 20, 'Previous', null, false);
-        this._detailPlayBtn = mkCtl('media-playback-pause-symbolic', 24, 'PlayPause', '_detailPlayIcon', true);
-        this._detailPlayBtn.set_margin_left(20);
-        this._detailPlayBtn.set_margin_right(20);
-        const nextBtn = mkCtl('media-skip-forward-symbolic', 20, 'Next', null, false);
+        const prevBtn = mkCtl('media-skip-backward-symbolic', 18, 'Previous', null, false);
+        this._detailPlayBtn = mkCtl('media-playback-pause-symbolic', 22, 'PlayPause', '_detailPlayIcon', true);
+        this._detailPlayBtn.set_margin_left(18);
+        this._detailPlayBtn.set_margin_right(18);
+        const nextBtn = mkCtl('media-skip-forward-symbolic', 18, 'Next', null, false);
         ctlRow.add_child(prevBtn);
         ctlRow.add_child(this._detailPlayBtn);
         ctlRow.add_child(nextBtn);
@@ -446,17 +467,24 @@ export default class DynamicIslandExtension extends Extension {
         const heading = (iconName, t, first) => {
             const row = new St.BoxLayout({vertical: false});
             if (!first)
-                row.set_margin_top(9);
+                row.set_margin_top(10);
+            const chip = new St.Bin({style_class: 'heading-chip'});
+            chip.set_size(22, 22);
             const ic = icon(iconName, 12, 'panel-heading-icon');
-            ic.set_margin_right(6);
+            ic.set_x_align(Clutter.ActorAlign.CENTER);
             ic.set_y_align(Clutter.ActorAlign.CENTER);
-            row.add_child(ic);
-            row.add_child(new St.Label({style_class: 'panel-heading', text: t}));
+            chip.set_child(ic);
+            chip.set_margin_right(8);
+            row.add_child(chip);
+            const lab = new St.Label({style_class: 'panel-heading', text: t});
+            lab.set_y_align(Clutter.ActorAlign.CENTER);
+            row.add_child(lab);
             panel.add_child(row);
         };
         const info = (t) => {
             const l = new St.Label({style_class: 'panel-text', text: t});
-            l.set_margin_top(2);
+            l.set_margin_top(3);
+            l.set_margin_left(30);
             panel.add_child(l);
             return l;
         };
@@ -477,7 +505,8 @@ export default class DynamicIslandExtension extends Extension {
         separator();
         heading('alarm-symbolic', 'TIMER');
         const timerRow = new St.BoxLayout({vertical: false});
-        timerRow.set_margin_top(5);
+        timerRow.set_margin_top(6);
+        timerRow.set_x_align(Clutter.ActorAlign.CENTER);
         for (const [label, secs] of [['1 mnt', 60], ['5 mnt', 300], ['10 mnt', 600], ['25 mnt', 1500]]) {
             const b = new St.Button({label, style_class: 'preset-btn'});
             b.set_margin_right(6);
@@ -489,12 +518,14 @@ export default class DynamicIslandExtension extends Extension {
         timerRow.add_child(stopBtn);
         panel.add_child(timerRow);
         this._panelTimer = new St.Label({style_class: 'panel-dim', text: 'Timer tidak aktif'});
-        this._panelTimer.set_margin_top(4);
+        this._panelTimer.set_margin_top(5);
+        this._panelTimer.set_margin_left(30);
         panel.add_child(this._panelTimer);
         separator();
         heading('preferences-system-notifications-symbolic', 'NOTIFIKASI TERAKHIR');
         this._panelNotifyBox = new St.BoxLayout({vertical: true});
         this._panelNotifyBox.set_margin_top(3);
+        this._panelNotifyBox.set_margin_left(30);
         panel.add_child(this._panelNotifyBox);
 
         this._pages = {
