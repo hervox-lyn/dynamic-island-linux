@@ -198,9 +198,10 @@ export default class DynamicIslandExtension extends Extension {
             this._monitorsChangedId = null;
         }
         this._players.clear();
-        if (this._actor) {
-            Main.layoutManager.uiGroup.remove_child(this._actor);
-            this._actor.destroy();
+        if (this._container) {
+            Main.layoutManager.uiGroup.remove_child(this._container);
+            this._container.destroy();
+            this._container = null;
             this._actor = null;
         }
     }
@@ -220,7 +221,9 @@ export default class DynamicIslandExtension extends Extension {
             style_class: 'island',
             vertical: true,
             reactive: true,
+            clip_to_allocation: true,
             x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.START,
         });
         this._actor.connect('button-press-event', (_a, event) => {
             if (event.get_button() === 3) {
@@ -356,26 +359,30 @@ export default class DynamicIslandExtension extends Extension {
             this._actor.add_child(page);
         }
 
-        const [w, h] = SIZES.clock;
-        this._actor.set_size(w, h);
-        Main.layoutManager.uiGroup.add_child(this._actor);
+        // Wadah selebar monitor berjangkar di tepi atas. Pil di dalamnya
+        // rata-tengah (x_align CENTER), jadi wadah menengahkan ulang pil
+        // SETIAP frame selama animasi lebar berjalan — pil membesar dan
+        // mengecil simetris dari tengah, tidak melebar ke kanan dari tepi
+        // kiri lalu melompat ke tengah di akhir animasi.
+        this._container = new St.Bin({reactive: false});
+        this._container.add_child(this._actor);
+        Main.layoutManager.uiGroup.add_child(this._container);
         this._reposition();
         this._monitorsChangedId = Main.layoutManager.connect(
             'monitors-changed', () => this._reposition());
         // Pop-in: mulai kecil lalu memantul ke ukuran jam
         this._actor.set_size(48, 48);
-        this._reposition();
         this._animateTo(SIZES.clock);
     }
 
     _reposition() {
-        if (!this._actor)
+        if (!this._container)
             return;
         const mon = Main.layoutManager.primaryMonitor;
         if (!mon)
             return;
-        const x = Math.round(mon.x + (mon.width - this._actor.width) / 2);
-        this._actor.set_position(x, mon.y + 6);
+        this._container.set_position(mon.x, mon.y + 6);
+        this._container.set_width(mon.width);
     }
 
     _animateTo([w, h]) {
@@ -385,8 +392,6 @@ export default class DynamicIslandExtension extends Extension {
             height: h,
             duration: 420,
             mode: Clutter.AnimationMode.EASE_OUT_BACK,
-            onUpdate: () => this._reposition(),
-            onComplete: () => this._reposition(),
         });
     }
 
