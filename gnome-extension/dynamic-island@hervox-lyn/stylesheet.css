@@ -111,7 +111,8 @@
 }
 
 .eq-bar {
-    background-color: #f0be4f;
+    background-color: #ffffff;
+    opacity: 0.85;
     border-radius: 2px;
     width: 3px;
 }
@@ -123,9 +124,7 @@
 }
 
 .progress-fill {
-    background-gradient-direction: horizontal;
-    background-gradient-start: #ffd97a;
-    background-gradient-end: #e8b84b;
+    background-color: #f5f5f5;
     border-radius: 3px;
     height: 5px;
 }

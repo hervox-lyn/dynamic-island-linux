@@ -25,10 +25,10 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const SIZES = {
-    clock: [208, 46],
+    clock: [188, 44],
     media: [276, 48],
     mediadetail: [376, 192],
-    notify: [404, 68],
+    notify: [384, 66],
     recording: [276, 48],
     panel: [416, 404],
 };
@@ -133,7 +133,7 @@ function icon(name, size, cls) {
     });
 }
 
-function makeEq(barCount) {
+function makeEq(barCount, pattern) {
     const box = new St.BoxLayout({vertical: false});
     box.set_y_align(Clutter.ActorAlign.END);
     box.set_height(16);
@@ -147,19 +147,26 @@ function makeEq(barCount) {
         box.add_child(bar);
         bars.push(bar);
     }
-    return {box, bars};
+    return {box, bars, pattern};
 }
 
+let eqPhase = 0;
 function animateEq(eq) {
-    for (const bar of eq.bars) {
-        const h = 4 + Math.round(Math.random() * 12);
+    // Gelombang deterministik ala referensi (bukan acak): tiap batang
+    // mengikuti pola tinggi dasar dengan fase bergeser — gerakannya
+    // halus, berirama, dan sinkron antar batang.
+    eqPhase += 0.85;
+    eq.bars.forEach((bar, i) => {
+        const base = eq.pattern[i % eq.pattern.length];
+        const wave = 0.5 + 0.5 * Math.sin(eqPhase + i * 1.15);
+        const h = Math.max(3, Math.round(base * (0.62 + 0.5 * wave)));
         bar.remove_all_transitions();
         bar.ease({
             height: h,
-            duration: 460,
+            duration: 470,
             mode: Clutter.AnimationMode.EASE_IN_OUT_SINE,
         });
-    }
+    });
 }
 
 class Player {
@@ -238,6 +245,7 @@ export default class DynamicIslandExtension extends Extension {
         this._timerTotal = 0;
         this._recSince = null;
         this._recPulse = false;
+        this._pausedSince = null;
         this._lastNotif = null;
         this._timeouts = [];
 
@@ -342,7 +350,7 @@ export default class DynamicIslandExtension extends Extension {
         this._mediaTitle.clutter_text.set_ellipsize(Pango.EllipsizeMode.END);
         this._mediaTitle.set_x_expand(true);
         this._mediaTitle.set_y_align(Clutter.ActorAlign.CENTER);
-        this._eqCompact = makeEq(4);
+        this._eqCompact = makeEq(4, [10, 16, 12, 9]);
         this._eqCompact.box.set_margin_left(10);
         this._eqCompact.box.set_y_align(Clutter.ActorAlign.CENTER);
         mediaBox.add_child(this._mediaArt);
@@ -370,7 +378,7 @@ export default class DynamicIslandExtension extends Extension {
         this._detailArtist.clutter_text.set_ellipsize(Pango.EllipsizeMode.END);
         dTitles.add_child(this._detailTitle);
         dTitles.add_child(this._detailArtist);
-        this._eqDetail = makeEq(5);
+        this._eqDetail = makeEq(5, [12, 20, 16, 22, 14]);
         this._eqDetail.box.set_margin_left(12);
         this._eqDetail.box.set_y_align(Clutter.ActorAlign.CENTER);
         dHead.add_child(this._detailArt);
@@ -580,6 +588,16 @@ export default class DynamicIslandExtension extends Extension {
         this._state = state;
         for (const [name, page] of Object.entries(this._pages))
             page.visible = name === state;
+        // Konten halaman baru memudar masuk (fade+sedikit napas) seperti
+        // pola AnimatePresence di referensi — transisi terasa premium.
+        const page = this._pages[state];
+        page.opacity = 0;
+        page.remove_all_transitions();
+        page.ease({
+            opacity: 255,
+            duration: 200,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+        });
         this._actor.style_class =
             (state === 'panel' || state === 'mediadetail')
                 ? 'island island-panel-radius'
@@ -760,7 +778,7 @@ export default class DynamicIslandExtension extends Extension {
             const frac = Math.min(1, pos / p.lengthUs);
             this._detailFill.set_width(Math.round(frac * DETAIL_PROGRESS_W));
             this._detailElapsed.set_text(fmtHms(pos / 1e6));
-            this._detailTotal.set_text(fmtHms(p.lengthUs / 1e6));
+            this._detailTotal.set_text(`-${fmtHms((p.lengthUs - pos) / 1e6)}`);
             this._detailTrack.visible = true;
         } else {
             this._detailTrack.visible = false;
@@ -955,6 +973,19 @@ export default class DynamicIslandExtension extends Extension {
         const p = this._activePlayer();
         if (p) {
             p.pollPosition();
+            // Auto-tutup detail 3 detik setelah media di-pause
+            // (pola auto-collapse dari referensi)
+            if (p.status === 'Paused') {
+                const nowS = GLib.get_monotonic_time() / 1e6;
+                if (this._pausedSince === null)
+                    this._pausedSince = nowS;
+                else if (this._detailOpen && nowS - this._pausedSince > 3) {
+                    this._pausedSince = null;
+                    this._closeDetail();
+                }
+            } else {
+                this._pausedSince = null;
+            }
             if (p.status === 'Playing') {
                 if (this._state === 'media')
                     animateEq(this._eqCompact);
