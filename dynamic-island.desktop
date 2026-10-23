@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Dynamic Island
+Comment=Pil overlay ala Dynamic Island: jam, media, notifikasi, baterai
+Exec=python3 /home/USER/dynamic-island-linux/dynamic_island.py
+Icon=preferences-desktop-display
+Terminal=false
+Categories=Utility;
+X-GNOME-Autostart-enabled=true
