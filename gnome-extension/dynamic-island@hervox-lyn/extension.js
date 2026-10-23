@@ -4,10 +4,12 @@
 // jadi posisinya bisa dikunci persis di tengah-atas — sesuatu yang tidak
 // bisa dilakukan aplikasi GTK biasa di Wayland.
 //
-// Fitur setara versi GTK: jam, media MPRIS (album art, progress, kontrol),
-// notifikasi (dari MessageTray shell), timer, indikator rekam layar,
-// baterai UPower, panel saat diklik. Animasi memakai Clutter ease
-// EASE_OUT_BACK (pantulan lembut ala Dynamic Island).
+// Fitur: jam, media MPRIS (album art membulat, equalizer animasi,
+// progress + label waktu, kontrol ikon simbolik), notifikasi (dari
+// MessageTray shell), timer, indikator rekam layar berdenyut, baterai
+// UPower, panel saat diklik. Animasi ukuran memakai Clutter ease
+// EASE_OUT_BACK di dalam wadah selebar monitor yang rata-tengah,
+// jadi pil selalu membesar/mengecil simetris dari tengah.
 
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
@@ -19,14 +21,15 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 const SIZES = {
     clock: [236, 58],
-    media: [444, 76],
+    media: [452, 82],
     notify: [466, 80],
     recording: [320, 60],
-    panel: [472, 392],
+    panel: [472, 428],
 };
 const NOTIFY_SHOW_S = 5;
 const LOW_BATT_PCT = 20;
 const RECORDER_PATTERN = '^(obs|wf-recorder|kooha|simplescreenrecorder|vokoscreenNG|vokoscreen|byzanz-record)$';
+const PROGRESS_W = 168;
 
 const MPRIS_PLAYER_IFACE = `
 <node>
@@ -97,6 +100,14 @@ function fmtHms(seconds) {
     const mm = String(m).padStart(2, '0');
     const ss = String(s).padStart(2, '0');
     return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+function icon(name, size, cls) {
+    return new St.Icon({
+        icon_name: name,
+        icon_size: size,
+        style_class: cls ?? '',
+    });
 }
 
 class Player {
@@ -170,6 +181,7 @@ export default class DynamicIslandExtension extends Extension {
         this._timerEnd = null;
         this._timerTotal = 0;
         this._recSince = null;
+        this._recPulse = false;
         this._lastNotif = null;
         this._timeouts = [];
 
@@ -190,7 +202,7 @@ export default class DynamicIslandExtension extends Extension {
             this._notifyTimeoutId = null;
         }
         if (this._nameSignalId && this._dbusProxy) {
-            this._dbusProxy.disconnect(this._nameSignalId);
+            this._dbusProxy.disconnectSignal(this._nameSignalId);
             this._nameSignalId = null;
         }
         if (this._monitorsChangedId) {
@@ -245,33 +257,77 @@ export default class DynamicIslandExtension extends Extension {
         clockBox.add_child(this._clockTime);
         clockBox.add_child(this._clockSub);
 
-        // --- halaman media ---
+        // --- halaman media (modern: art membulat, equalizer, ikon) ---
         const mediaBox = new St.BoxLayout({vertical: false});
         mediaBox.set_y_align(Clutter.ActorAlign.CENTER);
-        this._mediaArt = new St.Icon({icon_size: 42});
-        this._mediaArt.set_margin_right(10);
+        this._mediaArt = new St.Icon({
+            icon_size: 46,
+            style_class: 'media-art',
+        });
+        this._mediaArt.set_margin_right(12);
         const mid = new St.BoxLayout({vertical: true});
         mid.set_y_align(Clutter.ActorAlign.CENTER);
         mid.set_x_expand(true);
-        this._mediaTitle = new St.Label({style_class: 'media-title', text: ''});
-        this._mediaArtist = new St.Label({style_class: 'media-artist', text: ''});
+        const titleRow = new St.BoxLayout({vertical: false});
+        this._mediaTitle = new St.Label({
+            style_class: 'media-title', text: '',
+        });
+        this._mediaTitle.set_x_expand(true);
+        titleRow.add_child(this._mediaTitle);
+        // Equalizer mini: 4 batang menari saat musik diputar
+        this._eqBox = new St.BoxLayout({vertical: false});
+        this._eqBox.set_y_align(Clutter.ActorAlign.END);
+        this._eqBox.set_height(16);
+        this._eqBars = [];
+        for (let i = 0; i < 4; i++) {
+            const bar = new St.Widget({style_class: 'eq-bar'});
+            bar.set_size(3, 5);
+            bar.set_y_align(Clutter.ActorAlign.END);
+            if (i > 0)
+                bar.set_margin_left(2);
+            this._eqBox.add_child(bar);
+            this._eqBars.push(bar);
+        }
+        titleRow.add_child(this._eqBox);
+        this._mediaArtist = new St.Label({
+            style_class: 'media-artist', text: '',
+        });
+        const progRow = new St.BoxLayout({vertical: false});
+        progRow.set_margin_top(5);
         const track = new St.BoxLayout({
             style_class: 'progress-track', vertical: false,
         });
-        track.set_width(170);
-        track.set_margin_top(4);
+        track.set_width(PROGRESS_W);
+        track.set_y_align(Clutter.ActorAlign.CENTER);
         this._mediaFill = new St.Widget({style_class: 'progress-fill'});
         this._mediaFill.set_width(0);
         track.add_child(this._mediaFill);
         this._mediaTrack = track;
-        mid.add_child(this._mediaTitle);
+        this._mediaTime = new St.Label({
+            style_class: 'media-time', text: '',
+        });
+        this._mediaTime.set_margin_left(8);
+        this._mediaTime.set_y_align(Clutter.ActorAlign.CENTER);
+        progRow.add_child(track);
+        progRow.add_child(this._mediaTime);
+        mid.add_child(titleRow);
         mid.add_child(this._mediaArtist);
-        mid.add_child(track);
+        mid.add_child(progRow);
         mediaBox.add_child(this._mediaArt);
         mediaBox.add_child(mid);
-        for (const [label, method] of [['⏮', 'Previous'], ['⏯', 'PlayPause'], ['⏭', 'Next']]) {
-            const btn = new St.Button({label, style_class: 'ctl-btn'});
+        const ctlDefs = [
+            ['media-skip-backward-symbolic', 'Previous', null],
+            ['media-playback-pause-symbolic', 'PlayPause', '_playIcon'],
+            ['media-skip-forward-symbolic', 'Next', null],
+        ];
+        for (const [iconName, method, ref] of ctlDefs) {
+            const btn = new St.Button({style_class: 'ctl-btn'});
+            const ic = icon(iconName, 16);
+            if (ref)
+                this[ref] = ic;
+            btn.set_child(ic);
             btn.set_margin_left(6);
+            btn.set_y_align(Clutter.ActorAlign.CENTER);
             btn.connect('clicked', () => {
                 const p = this._activePlayer();
                 if (p)
@@ -283,8 +339,8 @@ export default class DynamicIslandExtension extends Extension {
         // --- halaman notifikasi ---
         const notifyBox = new St.BoxLayout({vertical: false});
         notifyBox.set_y_align(Clutter.ActorAlign.CENTER);
-        this._notifyIcon = new St.Icon({icon_size: 30});
-        this._notifyIcon.set_margin_right(10);
+        this._notifyIcon = new St.Icon({icon_size: 32});
+        this._notifyIcon.set_margin_right(12);
         const ntext = new St.BoxLayout({vertical: true});
         ntext.set_y_align(Clutter.ActorAlign.CENTER);
         ntext.set_x_expand(true);
@@ -297,37 +353,56 @@ export default class DynamicIslandExtension extends Extension {
         notifyBox.add_child(this._notifyIcon);
         notifyBox.add_child(ntext);
 
-        // --- halaman rekaman ---
+        // --- halaman rekaman (titik berdenyut) ---
         const recBox = new St.BoxLayout({vertical: false});
         recBox.set_x_align(Clutter.ActorAlign.CENTER);
         recBox.set_y_align(Clutter.ActorAlign.CENTER);
-        const dot = new St.Label({style_class: 'rec-dot', text: '●'});
-        dot.set_margin_right(8);
+        this._recDot = new St.Widget({style_class: 'rec-dot'});
+        this._recDot.set_size(10, 10);
+        this._recDot.set_pivot_point(0.5, 0.5);
+        this._recDot.set_margin_right(9);
+        this._recDot.set_y_align(Clutter.ActorAlign.CENTER);
         this._recLabel = new St.Label({style_class: 'rec-text', text: 'Merekam 00:00'});
-        recBox.add_child(dot);
+        recBox.add_child(this._recDot);
         recBox.add_child(this._recLabel);
 
         // --- panel ---
         const panel = new St.BoxLayout({vertical: true});
-        const heading = (t) => {
-            const l = new St.Label({style_class: 'panel-heading', text: t});
-            panel.add_child(l);
-            return l;
+        const heading = (iconName, t, first) => {
+            const row = new St.BoxLayout({vertical: false});
+            if (!first)
+                row.set_margin_top(9);
+            const ic = icon(iconName, 12, 'panel-heading-icon');
+            ic.set_margin_right(6);
+            ic.set_y_align(Clutter.ActorAlign.CENTER);
+            row.add_child(ic);
+            row.add_child(new St.Label({style_class: 'panel-heading', text: t}));
+            panel.add_child(row);
         };
         const info = (t) => {
             const l = new St.Label({style_class: 'panel-text', text: t});
+            l.set_margin_top(2);
             panel.add_child(l);
             return l;
         };
-        heading('MEDIA');
+        const separator = () => {
+            const s = new St.Widget({style_class: 'sep'});
+            s.set_height(1);
+            s.set_margin_top(9);
+            panel.add_child(s);
+        };
+        heading('audio-x-generic-symbolic', 'MEDIA', true);
         this._panelMedia = info('Tidak ada media diputar');
-        heading('BATERAI');
+        separator();
+        heading('battery-full-symbolic', 'BATERAI');
         this._panelBatt = info('-');
-        heading('REKAM LAYAR');
+        separator();
+        heading('media-record-symbolic', 'REKAM LAYAR');
         this._panelRec = info('Tidak merekam');
-        heading('TIMER');
+        separator();
+        heading('alarm-symbolic', 'TIMER');
         const timerRow = new St.BoxLayout({vertical: false});
-        timerRow.set_margin_top(4);
+        timerRow.set_margin_top(5);
         for (const [label, secs] of [['1 mnt', 60], ['5 mnt', 300], ['10 mnt', 600], ['25 mnt', 1500]]) {
             const b = new St.Button({label, style_class: 'preset-btn'});
             b.set_margin_right(6);
@@ -341,8 +416,10 @@ export default class DynamicIslandExtension extends Extension {
         this._panelTimer = new St.Label({style_class: 'panel-dim', text: 'Timer tidak aktif'});
         this._panelTimer.set_margin_top(4);
         panel.add_child(this._panelTimer);
-        heading('NOTIFIKASI TERAKHIR');
+        separator();
+        heading('preferences-system-notifications-symbolic', 'NOTIFIKASI TERAKHIR');
         this._panelNotifyBox = new St.BoxLayout({vertical: true});
+        this._panelNotifyBox.set_margin_top(3);
         panel.add_child(this._panelNotifyBox);
 
         this._pages = {
@@ -359,11 +436,10 @@ export default class DynamicIslandExtension extends Extension {
             this._actor.add_child(page);
         }
 
-        // Wadah selebar monitor berjangkar di tepi atas. Pil di dalamnya
-        // rata-tengah (x_align CENTER), jadi wadah menengahkan ulang pil
-        // SETIAP frame selama animasi lebar berjalan — pil membesar dan
-        // mengecil simetris dari tengah, tidak melebar ke kanan dari tepi
-        // kiri lalu melompat ke tengah di akhir animasi.
+        // Wadah selebar monitor berjangkar di tepi atas: pil di dalamnya
+        // rata-tengah, jadi wadah menengahkan ulang pil SETIAP frame
+        // selama animasi lebar berjalan — membesar/mengecil selalu
+        // simetris dari tengah.
         this._container = new St.Bin({reactive: false});
         this._container.add_child(this._actor);
         Main.layoutManager.uiGroup.add_child(this._container);
@@ -489,15 +565,15 @@ export default class DynamicIslandExtension extends Extension {
             this._lowBattWarned = false;
         if (changed) {
             if (state === 1)
-                this._showNotification('Baterai', 'battery', '', `Mengisi daya — ${newPct}%`);
+                this._showNotification('Baterai', 'battery-full-symbolic', '', `Mengisi daya — ${newPct}%`);
             else if (state === 2)
-                this._showNotification('Baterai', 'battery', '', `Berhenti mengisi — ${newPct}%`);
+                this._showNotification('Baterai', 'battery-full-symbolic', '', `Berhenti mengisi — ${newPct}%`);
             else if (state === 4)
-                this._showNotification('Baterai', 'battery', '', 'Baterai penuh — 100%');
+                this._showNotification('Baterai', 'battery-full-symbolic', '', 'Baterai penuh — 100%');
         }
         if (!initial && state === 2 && newPct <= LOW_BATT_PCT && !this._lowBattWarned) {
             this._lowBattWarned = true;
-            this._showNotification('Baterai lemah', 'battery', '',
+            this._showNotification('Baterai lemah', 'battery-caution-symbolic', '',
                 `Sisa ${newPct}% — sambungkan charger`);
         }
         this._refreshPanel();
@@ -521,6 +597,12 @@ export default class DynamicIslandExtension extends Extension {
         if (p) {
             this._mediaTitle.set_text(p.title || 'Tanpa judul');
             this._mediaArtist.set_text(p.artist || p.busName.split('.').pop());
+            if (this._playIcon) {
+                this._playIcon.set_icon_name(p.status === 'Playing'
+                    ? 'media-playback-pause-symbolic'
+                    : 'media-playback-start-symbolic');
+            }
+            this._eqBox.visible = p.status === 'Playing';
             if (p.artUrl && p.artUrl.startsWith('file://')) {
                 this._mediaArt.set_gicon(Gio.FileIcon.new(
                     Gio.File.new_for_path(p.artUrl.slice(7))));
@@ -530,7 +612,9 @@ export default class DynamicIslandExtension extends Extension {
                     Gio.File.new_for_uri(p.artUrl)));
                 this._mediaArt.visible = true;
             } else {
-                this._mediaArt.visible = false;
+                this._mediaArt.set_gicon(null);
+                this._mediaArt.set_icon_name('audio-x-generic-symbolic');
+                this._mediaArt.visible = true;
             }
             this._updateProgress(p);
         }
@@ -541,10 +625,25 @@ export default class DynamicIslandExtension extends Extension {
     _updateProgress(p) {
         if (p && p.lengthUs > 0) {
             const frac = Math.min(1, p.estimatedPosition() / p.lengthUs);
-            this._mediaFill.set_width(Math.round(frac * 170));
+            this._mediaFill.set_width(Math.round(frac * PROGRESS_W));
             this._mediaTrack.visible = true;
+            this._mediaTime.set_text(
+                `${fmtHms(p.estimatedPosition() / 1e6)} / ${fmtHms(p.lengthUs / 1e6)}`);
         } else {
             this._mediaTrack.visible = false;
+            this._mediaTime.set_text('');
+        }
+    }
+
+    _animateEq() {
+        for (const bar of this._eqBars) {
+            const h = 4 + Math.round(Math.random() * 12);
+            bar.remove_all_transitions();
+            bar.ease({
+                height: h,
+                duration: 460,
+                mode: Clutter.AnimationMode.EASE_IN_OUT_SINE,
+            });
         }
     }
 
@@ -563,20 +662,29 @@ export default class DynamicIslandExtension extends Extension {
                 const when = n.datetime ? n.datetime.to_unix() : 0;
                 if (when && (Date.now() / 1000 - when) > 10)
                     continue; // notifikasi lama saat ekstensi baru aktif
+                let gicon = null;
+                try {
+                    gicon = n.gicon ?? n.icon ?? source.gicon ?? source.icon ?? null;
+                } catch (e) {
+                    gicon = null;
+                }
                 this._showNotification(source.title ?? 'Notifikasi', '',
-                    n.title ?? '', n.body ?? '');
+                    n.title ?? '', n.body ?? '', gicon);
             }
         } catch (e) { /* API MessageTray berubah — fitur ini diam saja */ }
     }
 
-    _showNotification(app, iconName, summary, body) {
+    _showNotification(app, iconName, summary, body, gicon) {
         this._notifyHistory.unshift({app, summary});
         this._notifyHistory = this._notifyHistory.slice(0, 5);
         this._notifyApp.set_text(app || 'Notifikasi');
         this._notifySummary.set_text(summary || '');
         this._notifyBody.set_text(body || '');
         this._notifyBody.visible = !!body;
-        if (iconName) {
+        if (gicon) {
+            this._notifyIcon.set_gicon(gicon);
+            this._notifyIcon.visible = true;
+        } else if (iconName) {
             this._notifyIcon.set_icon_name(iconName);
             this._notifyIcon.visible = true;
         } else {
@@ -690,7 +798,7 @@ export default class DynamicIslandExtension extends Extension {
         if (remaining !== null && remaining <= 0) {
             const total = this._timerTotal;
             this._stopTimer(false);
-            this._showNotification('Timer', 'alarm-clock', '',
+            this._showNotification('Timer', 'alarm-symbolic', '',
                 `Waktu habis! (${fmtHms(total)})`);
         }
         if (remaining !== null && remaining > 0) {
@@ -710,13 +818,27 @@ export default class DynamicIslandExtension extends Extension {
         if (this._recSince !== null) {
             this._recLabel.set_text(
                 `Merekam ${fmtHms(GLib.get_monotonic_time() / 1e6 - this._recSince)}`);
+            // Denyut titik rekam
+            this._recPulse = !this._recPulse;
+            const s = this._recPulse ? 0.65 : 1.0;
+            this._recDot.remove_all_transitions();
+            this._recDot.ease({
+                scale_x: s,
+                scale_y: s,
+                opacity: this._recPulse ? 160 : 255,
+                duration: 480,
+                mode: Clutter.AnimationMode.EASE_IN_OUT_SINE,
+            });
         }
 
         const p = this._activePlayer();
         if (p) {
             p.pollPosition();
-            if (this._state === 'media')
+            if (this._state === 'media') {
                 this._updateProgress(p);
+                if (p.status === 'Playing')
+                    this._animateEq();
+            }
         }
         if (this._panelOpen)
             this._refreshPanel();

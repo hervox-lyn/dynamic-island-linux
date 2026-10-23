@@ -1,124 +1,166 @@
 /* Dynamic Island — stylesheet ekstensi GNOME Shell */
 
 .island {
-    background-color: rgba(8, 8, 11, 0.94);
-    border: 1px solid rgba(255, 255, 255, 0.09);
+    background-color: rgba(9, 9, 13, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: 999px;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
-    padding: 10px 14px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.50);
+    padding: 10px 16px;
 }
 
 .island-panel-radius {
     border-radius: 28px;
 }
 
+/* --- jam --- */
 .clock-time {
-    font-size: 17px;
-    font-weight: bold;
-    color: #f5f5f5;
+    font-size: 18px;
+    font-weight: 800;
+    color: #f7f7f8;
 }
 
 .clock-date {
     font-size: 11px;
-    color: #b9bec9;
+    color: #a7acb8;
 }
 
 .timer-chip {
     font-size: 12px;
     font-weight: bold;
-    color: #e8b84b;
+    color: #f0be4f;
+}
+
+/* --- media --- */
+.media-art {
+    border-radius: 10px;
+    color: #a7acb8;
 }
 
 .media-title {
-    font-size: 13px;
-    font-weight: bold;
-    color: #f5f5f5;
+    font-size: 14px;
+    font-weight: 700;
+    color: #f7f7f8;
 }
 
 .media-artist {
     font-size: 11px;
-    color: #b9bec9;
+    color: #a7acb8;
+    padding-top: 1px;
 }
 
+.media-time {
+    font-size: 10px;
+    color: #878d99;
+    font-weight: 600;
+}
+
+.eq-bar {
+    background-color: #f0be4f;
+    border-radius: 2px;
+    width: 3px;
+}
+
+.progress-track {
+    background-color: rgba(255, 255, 255, 0.14);
+    border-radius: 3px;
+    height: 5px;
+}
+
+.progress-fill {
+    background-gradient-direction: horizontal;
+    background-gradient-start: #ffd97a;
+    background-gradient-end: #e8b84b;
+    border-radius: 3px;
+    height: 5px;
+}
+
+.ctl-btn {
+    background-color: rgba(255, 255, 255, 0.09);
+    border-radius: 999px;
+    color: #ffffff;
+    min-width: 34px;
+    min-height: 34px;
+    padding: 0;
+}
+
+.ctl-btn:hover {
+    background-color: rgba(255, 255, 255, 0.20);
+}
+
+.ctl-btn:active {
+    background-color: rgba(240, 190, 79, 0.35);
+}
+
+/* --- notifikasi --- */
 .notify-app {
-    font-size: 11px;
-    font-weight: bold;
-    color: #e8b84b;
+    font-size: 10px;
+    font-weight: 700;
+    color: #f0be4f;
 }
 
 .notify-summary {
     font-size: 13px;
-    font-weight: bold;
-    color: #f5f5f5;
+    font-weight: 700;
+    color: #f7f7f8;
+    padding-top: 1px;
 }
 
 .notify-body {
     font-size: 11px;
-    color: #b9bec9;
+    color: #a7acb8;
+    padding-top: 1px;
+}
+
+/* --- rekaman --- */
+.rec-dot {
+    background-color: #ff453a;
+    border-radius: 999px;
 }
 
 .rec-text {
     font-size: 13px;
-    font-weight: bold;
-    color: #f5f5f5;
+    font-weight: 700;
+    color: #f7f7f8;
 }
 
-.rec-dot {
-    font-size: 13px;
-    color: #ff453a;
-}
-
+/* --- panel --- */
 .panel-heading {
-    font-size: 11px;
-    font-weight: bold;
-    color: #e8b84b;
-    padding-top: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    color: #f0be4f;
+}
+
+.panel-heading-icon {
+    color: #f0be4f;
 }
 
 .panel-text {
     font-size: 12px;
-    color: #f5f5f5;
+    color: #eef0f3;
 }
 
 .panel-dim {
     font-size: 11px;
-    color: #b9bec9;
+    color: #878d99;
 }
 
-.ctl-btn {
-    background-color: rgba(255, 255, 255, 0.10);
-    border-radius: 999px;
-    color: #ffffff;
-    font-size: 13px;
-    min-width: 30px;
-    min-height: 30px;
-    padding: 0 6px;
-}
-
-.ctl-btn:hover {
-    background-color: rgba(255, 255, 255, 0.22);
+.sep {
+    background-color: rgba(255, 255, 255, 0.08);
 }
 
 .preset-btn {
-    background-color: rgba(255, 255, 255, 0.10);
+    background-color: rgba(255, 255, 255, 0.09);
     border-radius: 10px;
     color: #ffffff;
     font-size: 12px;
-    padding: 5px 10px;
+    font-weight: 600;
+    padding: 6px 11px;
 }
 
 .preset-btn:hover {
-    background-color: rgba(232, 184, 75, 0.35);
+    background-color: rgba(240, 190, 79, 0.35);
 }
 
-.progress-track {
-    background-color: rgba(255, 255, 255, 0.15);
-    border-radius: 3px;
-    height: 4px;
-}
-
-.progress-fill {
-    background-color: #e8b84b;
-    border-radius: 3px;
-    height: 4px;
+.preset-btn:active {
+    background-color: rgba(240, 190, 79, 0.55);
 }
